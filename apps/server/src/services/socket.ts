@@ -2,19 +2,20 @@ import { Server } from "socket.io";
 import { Redis } from "ioredis";
 import prismaClient from "./prisma";
 import { produceMessage } from "./kafka";
+import secrets from '../../../../.secrets.json'; //YOUR OWN CREDENTIALS FOR REDIS, KAFKA AND POSTGRESQL
 
 
 const pub = new Redis({
-    host: 'caching-arkebi-chat-26c312d-arkebi-chat.e.aivencloud.com',
-    port: 19928,
-    username: 'default',
-    password: 'AVNS_gWIY_4U0TaHGq1EE5WM',
+    host: secrets['redis_secrets']['host'],
+    port: secrets['redis_secrets']['PORT'],
+    username: secrets['redis_secrets']['username'],
+    password: secrets['redis_secrets']['password'],
 });
 const sub = new Redis({
-    host: 'caching-arkebi-chat-26c312d-arkebi-chat.e.aivencloud.com',
-    port: 19928,
-    username: 'default',
-    password: 'AVNS_gWIY_4U0TaHGq1EE5WM',
+    host: secrets['redis_secrets']['host'],
+    port: secrets['redis_secrets']['PORT'],
+    username: secrets['redis_secrets']['username'],
+    password: secrets['redis_secrets']['password'],
 });
 
 class SocketService {
@@ -55,6 +56,7 @@ class SocketService {
                 io.emit('message', message)
             }
             await produceMessage(message)
+            console.log('Produced message to Kafka ("MESSAGES Topic")');
         })
     }
 }

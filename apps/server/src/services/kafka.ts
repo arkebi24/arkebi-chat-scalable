@@ -1,8 +1,19 @@
 import { Kafka, Producer } from "kafkajs";
+import secrets from '../../../../.secrets.json'; //YOUR OWN CREDENTIALS FOR REDIS, KAFKA AND POSTGRESQL
+import fs from 'fs';
+import path from 'path';
 
 const kafka = new Kafka({
-    brokers: [],
-})
+    brokers: [secrets['kafka_secrets']['brokers']],
+    ssl: {
+        ca: [fs.readFileSync(path.resolve("./ca.pem"), "utf-8")]
+    },
+    sasl: {
+        username: secrets['kafka_secrets']['username'],
+        password: secrets['kafka_secrets']['password'],
+        mechanism: 'plain',
+    },
+});
 
 //cache producer
 let producer: null | Producer = null;
