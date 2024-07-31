@@ -2,6 +2,7 @@ import { Kafka, Producer } from "kafkajs";
 import secrets from '../../../../.secrets.json'; //YOUR OWN CREDENTIALS FOR REDIS, KAFKA AND POSTGRESQL
 import fs from 'fs';
 import path from 'path';
+import prismaClient from "./prisma";
 
 const kafka = new Kafka({
     brokers: [secrets['kafka_secrets']['brokers']],
@@ -35,6 +36,33 @@ export async function produceMessage(message:string) {
         messages: [{key: `messaged-${Date.now()}`, value: message}],
         topic: "MESSAGES",
     });
+}
+
+export async function startConsumer() {
+    const consumer = kafka.consumer({groupId: "default"});
+    await consumer.connect();
+    await consumer.subscribe({topic: "MESSAGES", fromBeginning: true});
+
+    await consumer.run({
+        autoCommit: true,
+        eachMessage: async ({message, pause}) => {
+            if(!message.value) return
+            console.log('New Message Recieved..');
+            try {
+                await prismaClient.message.create({
+                    data: {
+                        text: message.value?.toString(),
+                    },
+                });
+            } catch (err) {
+                console.log('Error: ', err);
+                pause();
+                setTimeout(() => {
+                    consumer.resume([{topic: "MESSAGES"}]);
+                }, 60000)
+            }
+        }
+    })
 }
 
 export default kafka;
